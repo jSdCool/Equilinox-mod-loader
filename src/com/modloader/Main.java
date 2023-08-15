@@ -17,11 +17,16 @@ import java.util.jar.JarFile;
 
 import org.json.JSONObject;
 
+import com.modloader.events.AsyncLooping;
+
 public class Main {
 	static final String tempLibPath  = System.getenv("tmp")+"/eml/bin";
+	static boolean gameRunning=true;
+	static ArrayList<AsyncLooping> asyncLoopingObjects = new ArrayList<>();
 	
 	public static void main(String[] args) {
 		String gameJarPath="EquilinoxWindows_game.jar";
+		AsyncLoopExec asyncLoopting = new AsyncLoopExec();
 		
 		// Get the game JAR file 
         File jarFile = new File(gameJarPath);
@@ -90,6 +95,17 @@ public class Main {
 		        }
 	        }
 	        
+	        //auto register event listeners 
+	        for(int i=0;i<modClasses.size();i++) {
+	        	//AsyncLooping event 
+	        	if(modClasses.get(i) instanceof AsyncLooping) {
+	        		//if the event was not already registered
+	        		if(!asyncLoopingObjects.contains((AsyncLooping)modClasses.get(i)))
+	        			asyncLoopingObjects.add((AsyncLooping)modClasses.get(i));
+	        	}
+	        }
+	        
+	        asyncLoopting.start();
 	        //run the game
 	        System.out.println("executing main medthod");
 	        method.invoke(instance, (Object)args);
@@ -111,6 +127,7 @@ public class Main {
 		}
         
         System.out.println("program terminating");
+        gameRunning = false;
         
 	}
 	
