@@ -1,13 +1,15 @@
-package com.modloader;
+package com.modloader.events.exec;
+
+import com.modloader.Main;
 
 public final class AsyncLoopExec extends Thread{
 	private static boolean exsists =false;
-	AsyncLoopExec(){
+	public AsyncLoopExec(){
 		if(!exsists) {
 			exsists = true;
 			return;
 		}else {
-			throw new RuntimeException("attmpted to creat too many instanced of "+this.getClass());
+			throw new RuntimeException("attmpted to create too many instanced of "+this.getClass());
 		}
 	}
 	public void run() {

@@ -18,11 +18,15 @@ import java.util.jar.JarFile;
 import org.json.JSONObject;
 
 import com.modloader.events.AsyncLooping;
+import com.modloader.events.OnGameLoad;
+import com.modloader.events.exec.AsyncLoopExec;
+import com.modloader.events.exec.OnGameLoadExec;
 
 public class Main {
 	static final String tempLibPath  = System.getenv("tmp")+"/eml/bin";
-	static boolean gameRunning=true;
-	static ArrayList<AsyncLooping> asyncLoopingObjects = new ArrayList<>();
+	public static boolean gameRunning=true;
+	public static ArrayList<AsyncLooping> asyncLoopingObjects = new ArrayList<>();
+	public static ArrayList<OnGameLoad> onGameLoadObjects = new ArrayList<>();
 	
 	public static void main(String[] args) {
 		String gameJarPath="EquilinoxWindows_game.jar";
@@ -69,8 +73,8 @@ public class Main {
 	        
 	        System.out.println("acuiring main method");
 	        // get the main method of the game 
-	        Method method = clazz.getMethod("main", String[].class);
-	        
+	        Method mainMethod = clazz.getMethod("main", String[].class);
+	      
 	        //load mods here
 	        ArrayList<ModInfo> modInfo = findMods(modsFolder);//find all the mods in the mods folder
 	        
@@ -103,12 +107,29 @@ public class Main {
 	        		if(!asyncLoopingObjects.contains((AsyncLooping)modClasses.get(i)))
 	        			asyncLoopingObjects.add((AsyncLooping)modClasses.get(i));
 	        	}
+	        	//game loaded event
+	        	if(modClasses.get(i) instanceof OnGameLoad) {
+	        		if(!onGameLoadObjects.contains((OnGameLoad)modClasses.get(i))) {
+	        			onGameLoadObjects.add((OnGameLoad)modClasses.get(i));
+	        		}
+	        	}
 	        }
+	        
+	        //get the stuff for on game load event
+	        try {
+	        	Class<?> keyboardClass = classLoader.loadClass("toolbox.MyKeyboard");
+				Field keyBoardLockedField = keyboardClass.getDeclaredField("lock");
+				Object keybord = keyboardClass.getMethod("getKeyboard").invoke(null);
+				new OnGameLoadExec(keyBoardLockedField,keybord).start();
+			} catch (NoSuchFieldException e) {
+				e.printStackTrace();
+			}
+	        
 	        
 	        asyncLoopting.start();
 	        //run the game
 	        System.out.println("executing main medthod");
-	        method.invoke(instance, (Object)args);
+	        mainMethod.invoke(instance, (Object)args);
 	        modClassLoader.close();
 	        classLoader.close();
 	        
