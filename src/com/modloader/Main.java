@@ -27,6 +27,10 @@ public class Main {
 	public static boolean gameRunning=true;
 	public static ArrayList<AsyncLooping> asyncLoopingObjects = new ArrayList<>();
 	public static ArrayList<OnGameLoad> onGameLoadObjects = new ArrayList<>();
+	public static ArrayList<ModInfo> modInfo;
+	private static OnGameLoadExec onGameLoadExec;
+	private static boolean gameLaoded =false,APIExsists=false;
+	
 	
 	public static void main(String[] args) {
 		String gameJarPath="EquilinoxWindows_game.jar";
@@ -76,7 +80,7 @@ public class Main {
 	        Method mainMethod = clazz.getMethod("main", String[].class);
 	      
 	        //load mods here
-	        ArrayList<ModInfo> modInfo = findMods(modsFolder);//find all the mods in the mods folder
+	        modInfo = findMods(modsFolder);//find all the mods in the mods folder
 	        
 	        ArrayList<URL> modJars=new ArrayList<>();
 	        ArrayList<ModInitializer> modClasses = new ArrayList<>();
@@ -91,6 +95,10 @@ public class Main {
 		        for(int i=0;i<modInfo.size();i++) {//load the main classes of each mod and execute it's main method
 		        	if(modInfo.get(i).getPriority()==j) {//if this mod is of the current priority
 			        	System.out.println("loading mod: "+modInfo.get(i).getModName());
+			        	if(modInfo.get(i).getModID().equals("api")) {
+			        		APIExsists=true;
+			        	}
+			        	System.out.println(modInfo.get(i).toString());
 			        	Class<?> modClass = modClassLoader.loadClass(modInfo.get(i).getMainClass());
 			        	Object c = modClass.newInstance();
 			        	((ModInitializer)c).initMod();
@@ -120,7 +128,7 @@ public class Main {
 	        	Class<?> keyboardClass = classLoader.loadClass("toolbox.MyKeyboard");
 				Field keyBoardLockedField = keyboardClass.getDeclaredField("lock");
 				Object keybord = keyboardClass.getMethod("getKeyboard").invoke(null);
-				new OnGameLoadExec(keyBoardLockedField,keybord).start();
+				onGameLoadExec = new OnGameLoadExec(keyBoardLockedField,keybord);
 			} catch (NoSuchFieldException e) {
 				e.printStackTrace();
 			}
@@ -210,9 +218,15 @@ public class Main {
 	                    //retrieve the mod info from the file
 	                    String modName = json.getString("name");
 	                    String mainClass = json.getString("entrypoint");
+	                    String id = json.getString("modid");
 	                    byte priority = (byte)json.getInt("priority");
-	                    mods.add(new ModInfo(modName, mainClass,modFiles[i],priority));
-		            	
+	                    for(int j=0;j<mods.size();j++) {
+	                    	if(mods.get(j).getModID().equals(id)) {
+	                    		throw new RuntimeException("attempted to load 2 mods with the same ID");
+	                    	}
+	                    }
+	                    mods.add(new ModInfo(modName, mainClass,modFiles[i],priority,new File("mods/"+modFiles[i]).getAbsolutePath(),id));
+	                    
 		            }
 				} catch (Exception e) {
 		            e.printStackTrace();
@@ -222,6 +236,20 @@ public class Main {
 		
 		return mods;
 		
+	}
+	
+	/**called by the API when the game is loaded
+	 * runs the game loaded event
+	 */
+	public static void gameLoaded() {
+		if(!gameLaoded) {
+			gameLaoded=true;
+			onGameLoadExec.run();
+		}
+	}
+	
+	public static boolean APIExsists() {
+		return APIExsists;
 	}
 
 }

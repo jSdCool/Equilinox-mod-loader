@@ -4,7 +4,7 @@ import java.lang.reflect.Field;
 
 import com.modloader.Main;
 
-public class OnGameLoadExec extends Thread{
+public class OnGameLoadExec {
 	private static boolean exsists =false;
 	Field keyBaordLockedField;
 	Object keyBaord;
@@ -24,7 +24,7 @@ public class OnGameLoadExec extends Thread{
 			return;
 		}
 		
-		try {
+		/*try {
 			keyBaordLockedField.setAccessible(true);
 			while(!keyBaordLockedField.getBoolean(keyBaord)) {//wait for the keyboard to be locked
 				Thread.sleep(2);
@@ -37,7 +37,7 @@ public class OnGameLoadExec extends Thread{
 			}
 		} catch (IllegalArgumentException | IllegalAccessException | InterruptedException e) {
 			e.printStackTrace();
-		}
+		}*/
 		
 		//call the methods from the mods
 		for(int i=0;i<Main.onGameLoadObjects.size();i++) {
