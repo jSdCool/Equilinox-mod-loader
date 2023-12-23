@@ -31,7 +31,9 @@ public class Main {
 	private static OnGameLoadExec onGameLoadExec;
 	private static boolean gameLaoded =false,APIExsists=false;
 	
-	
+	/**the method that is called by the JVM when the program is launched
+	 * @param args command line arguments
+	 */
 	public static void main(String[] args) {
 		String gameJarPath="EquilinoxWindows_game.jar";
 		AsyncLoopExec asyncLoopting = new AsyncLoopExec();
@@ -43,7 +45,7 @@ public class Main {
         	System.out.println("extratcing native libs from game");
 			extractNativeLibraries(jarFile);
 		} catch (IOException e) {
-			throw new RuntimeException(e);
+			throw new RuntimeException("Exception occored while attemping to extract native libs",e);
 		}
         
         //add the native code dir we created to the lib path
@@ -156,21 +158,21 @@ public class Main {
 		}
         
         System.out.println("program terminating");
-        gameRunning = false;
+        gameRunning = false;//used to tell any parallel threads that the program has stopped
         
 	}
 	
 	/**extracts all native libs from a jar file
-	 * 
+	 * then places them at the temp path
 	 * @param jarFile the jar file to extract from
-	 * @throws IOException
+	 * @throws IOException generic IOExceoption
 	 */
 	private static void extractNativeLibraries(File jarFile) throws IOException {
 		
-		new File(tempLibPath ).mkdirs();//create the tmp dir
+		new File(tempLibPath ).mkdirs();//create the tmp dir if it does not exist
 	    JarFile jar = new JarFile(jarFile);
 	    Enumeration<JarEntry> entries = jar.entries();
-
+	    //look through all the files in the jar file
 	    while (entries.hasMoreElements()) {
 	        JarEntry entry = entries.nextElement();//get the next thing in the jar
 	        if (entry.getName().endsWith(".dll") || entry.getName().endsWith(".so")) {//if that thing is a .dll or .so
@@ -188,8 +190,8 @@ public class Main {
 	    jar.close();
 	}
 	
-	/**finds the mods
-	 * 
+	/**finds all mods(jar files) in the mods folder
+	 *then attempts to acquire  basic information0 about the mod
 	 * @param modsFolder the folder the mods are in
 	 * @return
 	 */
@@ -247,7 +249,9 @@ public class Main {
 			onGameLoadExec.run();
 		}
 	}
-	
+	/**check weather the API is present
+	 * @return weather the API is currently loaded
+	 */
 	public static boolean APIExsists() {
 		return APIExsists;
 	}
