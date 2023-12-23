@@ -15,6 +15,8 @@ import java.util.Enumeration;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import javax.swing.JOptionPane;
+
 import org.json.JSONObject;
 
 import com.modloader.events.AsyncLooping;
@@ -22,6 +24,10 @@ import com.modloader.events.OnGameLoad;
 import com.modloader.events.exec.AsyncLoopExec;
 import com.modloader.events.exec.OnGameLoadExec;
 
+/**main class for the EquilinoxMod loader
+ * @author jSdCool
+ *
+ */
 public class Main {
 	static final String tempLibPath  = System.getenv("tmp")+"/eml/bin";
 	public static boolean gameRunning=true;
@@ -35,6 +41,14 @@ public class Main {
 	 * @param args command line arguments
 	 */
 	public static void main(String[] args) {
+		//check the java version to make sure it is java 8. key features of java used by the mod loader do not work in java 9+
+		String javaVersion = System.getProperty("java.version");
+		if(!javaVersion.startsWith("1.8")) {
+			JOptionPane.showMessageDialog(null, "Java 1.8 is required to use this mod loader,\ncurrently running in java "+javaVersion, "java 8 required!", JOptionPane.ERROR_MESSAGE);
+			System.exit(1);
+			return;
+		}
+		
 		String gameJarPath="EquilinoxWindows_game.jar";
 		AsyncLoopExec asyncLoopting = new AsyncLoopExec();
 		
@@ -63,10 +77,11 @@ public class Main {
         }
         
         File modsFolder = new File("mods");
-        modsFolder.mkdirs();//create the mods folder in the game files
+        modsFolder.mkdirs();//create the mods folder in the game files if it does not already exist
         
         try {
-        	System.out.println("attempting to url the jar");
+        	System.out.println("attempting to url the game jar");
+        	//create a new class loader that has the game jar on it and has the class loader for this class in its tree
 	        URLClassLoader classLoader = new URLClassLoader(new URL[]{jarFile.toURI().toURL()},Main.class.getClassLoader());
 	        
 	        System.out.println("loading clazz");
@@ -93,18 +108,19 @@ public class Main {
 	        
 	        URLClassLoader modClassLoader = new URLClassLoader(modJars.toArray(new URL[]{}),classLoader);//load the jars
 	        
-	        for(int j=0;j<6;j++) {
+	        for(int j=0;j<6;j++) {//go through all 6 priority  levels
 		        for(int i=0;i<modInfo.size();i++) {//load the main classes of each mod and execute it's main method
 		        	if(modInfo.get(i).getPriority()==j) {//if this mod is of the current priority
 			        	System.out.println("loading mod: "+modInfo.get(i).getModName());
+			        	//if the mod is the API then enable the api features
 			        	if(modInfo.get(i).getModID().equals("api")) {
 			        		APIExsists=true;
 			        	}
 			        	System.out.println(modInfo.get(i).toString());
-			        	Class<?> modClass = modClassLoader.loadClass(modInfo.get(i).getMainClass());
-			        	Object c = modClass.newInstance();
-			        	((ModInitializer)c).initMod();
-			        	modClasses.add((ModInitializer)c);
+			        	Class<?> modClass = modClassLoader.loadClass(modInfo.get(i).getMainClass());//load the main class of the mod
+			        	Object c = modClass.newInstance();//create an instance of the main class
+			        	((ModInitializer)c).initMod();//run the init(main) method of the mod
+			        	modClasses.add((ModInitializer)c);//cast it to a ModInitializer so it can be handled natively instead of via reflection. then store it in a arrayList for later use
 		        	}
 		        }
 	        }
@@ -125,17 +141,11 @@ public class Main {
 	        	}
 	        }
 	        
-	        //get the stuff for on game load event
-	        try {
-	        	Class<?> keyboardClass = classLoader.loadClass("toolbox.MyKeyboard");
-				Field keyBoardLockedField = keyboardClass.getDeclaredField("lock");
-				Object keybord = keyboardClass.getMethod("getKeyboard").invoke(null);
-				onGameLoadExec = new OnGameLoadExec(keyBoardLockedField,keybord);
-			} catch (NoSuchFieldException e) {
-				e.printStackTrace();
-			}
+	        //Create the object for the game load event
+			onGameLoadExec = new OnGameLoadExec();
+			
 	        
-	        
+	        //start the async looping event
 	        asyncLoopting.start();
 	        //run the game
 	        System.out.println("executing main medthod");
@@ -193,7 +203,7 @@ public class Main {
 	/**finds all mods(jar files) in the mods folder
 	 *then attempts to acquire  basic information0 about the mod
 	 * @param modsFolder the folder the mods are in
-	 * @return
+	 * @return a list of information about all the mods found
 	 */
 	static ArrayList<ModInfo> findMods(File modsFolder){
 		String jsonPos ="mod.json";
