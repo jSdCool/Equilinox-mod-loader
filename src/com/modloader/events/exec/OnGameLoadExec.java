@@ -1,6 +1,8 @@
 package com.modloader.events.exec;
 
-import com.modloader.Main;
+import java.util.ArrayList;
+
+import com.modloader.events.OnGameLoad;
 
 /**the class that is reasonable for the operation of the 
  * @author jSdCool
@@ -8,9 +10,11 @@ import com.modloader.Main;
  */
 public class OnGameLoadExec {
 	private static boolean exsists =false;
-	public OnGameLoadExec(){
+	ArrayList<OnGameLoad> onGameLoadObjects;
+	public OnGameLoadExec(ArrayList<OnGameLoad> onGameLoadObjects){
 		if(!exsists) {//allow only 1 instance of this class to exist at once
 			exsists = true;
+			this.onGameLoadObjects = onGameLoadObjects;
 		}else {
 			throw new RuntimeException("attmpted to create too many instanced of "+this.getClass());
 		}
@@ -21,7 +25,7 @@ public class OnGameLoadExec {
 	 */
 	public void run() {
 		//check if any game load events were register
-		if(Main.onGameLoadObjects.size()==0) {
+		if(onGameLoadObjects.size()==0) {
 			System.out.println("no game load events found.");
 			return;
 		}
@@ -29,9 +33,9 @@ public class OnGameLoadExec {
 	
 		
 		//call the methods from the mods
-		for(int i=0;i<Main.onGameLoadObjects.size();i++) {
+		for(int i=0;i<onGameLoadObjects.size();i++) {
 			try {
-				Main.onGameLoadObjects.get(i).gameLoaded();
+				onGameLoadObjects.get(i).gameLoaded();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

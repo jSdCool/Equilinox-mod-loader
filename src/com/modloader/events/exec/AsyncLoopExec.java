@@ -1,6 +1,9 @@
 package com.modloader.events.exec;
 
+import java.util.ArrayList;
+
 import com.modloader.Main;
+import com.modloader.events.AsyncLooping;
 
 /**the class that is reasonable for the operation of the async looping event
  * @author jSdCool
@@ -8,14 +11,17 @@ import com.modloader.Main;
  */
 public final class AsyncLoopExec extends Thread{
 	private static boolean exsists =false;
-	public AsyncLoopExec(){
+	private ArrayList<AsyncLooping> asyncLoopingObjects;
+	public AsyncLoopExec(ArrayList<AsyncLooping> asyncLoopingObjects){
 		//allow only 1 instance of this class to exsist
 		if(!exsists) {
 			exsists = true;
+			this.asyncLoopingObjects=asyncLoopingObjects;
 			return;
 		}else {
 			throw new RuntimeException("attmpted to create too many instanced of "+this.getClass());
 		}
+		
 	}
 	
 	/**Initialized by the mod loader
@@ -23,16 +29,16 @@ public final class AsyncLoopExec extends Thread{
 	 */
 	public void run() {
 		//stop of no async looping events were registered
-		if(Main.asyncLoopingObjects.size()==0) {
+		if(asyncLoopingObjects.size()==0) {
 			System.out.println("no async loops found. terminated async loop thread");
 			return;
 		}
 		//while the game is running
 		while(Main.gameRunning) {
 			//go through all resisted events and execute them
-			for(int i=0;i<Main.asyncLoopingObjects.size();i++) {
+			for(int i=0;i<asyncLoopingObjects.size();i++) {
 				try {
-					Main.asyncLoopingObjects.get(i).asyncLoop();
+					asyncLoopingObjects.get(i).asyncLoop();
 				} catch (Exception e) {
 					System.err.println("An async loop ran into an error: ");
 					e.printStackTrace();

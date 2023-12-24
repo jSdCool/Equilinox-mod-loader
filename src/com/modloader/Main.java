@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -11,7 +12,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -21,8 +25,10 @@ import org.json.JSONObject;
 
 import com.modloader.events.AsyncLooping;
 import com.modloader.events.OnGameLoad;
+import com.modloader.events.SynchronousLooping;
 import com.modloader.events.exec.AsyncLoopExec;
 import com.modloader.events.exec.OnGameLoadExec;
+import com.modloader.events.exec.SynchronousLoopingExec;
 
 /**main class for the EquilinoxMod loader
  * @author jSdCool
@@ -31,10 +37,12 @@ import com.modloader.events.exec.OnGameLoadExec;
 public class Main {
 	static final String tempLibPath  = System.getenv("tmp")+"/eml/bin";
 	public static boolean gameRunning=true;
-	public static ArrayList<AsyncLooping> asyncLoopingObjects = new ArrayList<>();
-	public static ArrayList<OnGameLoad> onGameLoadObjects = new ArrayList<>();
+	private static ArrayList<AsyncLooping> asyncLoopingObjects = new ArrayList<>();
+	private static ArrayList<OnGameLoad> onGameLoadObjects = new ArrayList<>();
+	private static ArrayList<SynchronousLooping> syncLoopingObjects = new ArrayList<>();
 	public static ArrayList<ModInfo> modInfo;
 	private static OnGameLoadExec onGameLoadExec;
+	private static SynchronousLoopingExec syncLoopExec;
 	private static boolean gameLaoded =false,APIExsists=false;
 	
 	/**the method that is called by the JVM when the program is launched
@@ -50,7 +58,7 @@ public class Main {
 		}
 		
 		String gameJarPath="EquilinoxWindows_game.jar";
-		AsyncLoopExec asyncLoopting = new AsyncLoopExec();
+		AsyncLoopExec asyncLoopting = new AsyncLoopExec(asyncLoopingObjects);
 		
 		// Get the game JAR file 
         File jarFile = new File(gameJarPath);
@@ -107,6 +115,9 @@ public class Main {
 	        }
 	        
 	        URLClassLoader modClassLoader = new URLClassLoader(modJars.toArray(new URL[]{}),classLoader);//load the jars
+	        //convert args into a list that can be passed around to all the mods without letting any of the modify it
+	        List<String> clArgs = Arrays.asList(args);
+	        clArgs = Collections.unmodifiableList(clArgs);
 	        
 	        for(int j=0;j<6;j++) {//go through all 6 priority  levels
 		        for(int i=0;i<modInfo.size();i++) {//load the main classes of each mod and execute it's main method
@@ -119,7 +130,7 @@ public class Main {
 			        	System.out.println(modInfo.get(i).toString());
 			        	Class<?> modClass = modClassLoader.loadClass(modInfo.get(i).getMainClass());//load the main class of the mod
 			        	Object c = modClass.newInstance();//create an instance of the main class
-			        	((ModInitializer)c).initMod();//run the init(main) method of the mod
+			        	((ModInitializer)c).initMod(clArgs);//run the init(main) method of the mod
 			        	modClasses.add((ModInitializer)c);//cast it to a ModInitializer so it can be handled natively instead of via reflection. then store it in a arrayList for later use
 		        	}
 		        }
@@ -127,22 +138,40 @@ public class Main {
 	        
 	        //auto register event listeners 
 	        for(int i=0;i<modClasses.size();i++) {
+	        	ModInitializer m = modClasses.get(i);
 	        	//AsyncLooping event 
-	        	if(modClasses.get(i) instanceof AsyncLooping) {
+	        	if(m instanceof AsyncLooping) {
 	        		//if the event was not already registered
-	        		if(!asyncLoopingObjects.contains((AsyncLooping)modClasses.get(i)))
-	        			asyncLoopingObjects.add((AsyncLooping)modClasses.get(i));
+	        		if(!asyncLoopingObjects.contains((AsyncLooping)m))
+	        			asyncLoopingObjects.add((AsyncLooping)m);
 	        	}
 	        	//game loaded event
-	        	if(modClasses.get(i) instanceof OnGameLoad) {
-	        		if(!onGameLoadObjects.contains((OnGameLoad)modClasses.get(i))) {
-	        			onGameLoadObjects.add((OnGameLoad)modClasses.get(i));
+	        	if(m instanceof OnGameLoad) {
+	        		if(!onGameLoadObjects.contains((OnGameLoad)m)) {
+	        			onGameLoadObjects.add((OnGameLoad)m);
+	        		}
+	        	}
+	        	//sync looping event
+	        	if(m instanceof SynchronousLooping) {
+	        		if(!syncLoopingObjects.contains((SynchronousLooping)m)) {
+	        			syncLoopingObjects.add((SynchronousLooping)m);
 	        		}
 	        	}
 	        }
+	        //warnings if API is not present
+	        if(!APIExsists) {
+		        if(onGameLoadObjects.size()>0) {
+		        	System.out.println("==WARNING== attempted to register game loaded event without CRISPR API present. Any functionality that relys on game loaded event will not work!");
+		        }
+		        if(syncLoopingObjects.size()>0) {
+					System.out.println("==WARNING== attempted to register game loaded event without CRISPR API present. Any functionality that relys on sync looping event will not work!");
+		        }
+	        }
 	        
 	        //Create the object for the game load event
-			onGameLoadExec = new OnGameLoadExec();
+			onGameLoadExec = new OnGameLoadExec(onGameLoadObjects);
+			//create the object for the sync looping event
+			syncLoopExec = new SynchronousLoopingExec(syncLoopingObjects);
 			
 	        
 	        //start the async looping event
@@ -259,11 +288,48 @@ public class Main {
 			onGameLoadExec.run();
 		}
 	}
+	
+	/**called by the API on every game tick
+	 * runs the sync loop event
+	 */
+	public static void gameTick() {
+		syncLoopExec.run();
+	}
+	
 	/**check weather the API is present
 	 * @return weather the API is currently loaded
 	 */
 	public static boolean APIExsists() {
 		return APIExsists;
+	}
+	
+	public static final void registerEventListener(AsyncLooping e) {
+		if(!asyncLoopingObjects.contains(e))
+			asyncLoopingObjects.add(e);
+	}
+	
+	/**registers and event listener of the given type
+	 * @param e the event to register
+	 */
+	public static final void registerEventListener(OnGameLoad e) {
+		if(!APIExsists()) {
+			System.out.println("==WARNING== attempted to register game loaded event without CRISPR API present. Any functionality that relys on game loaded event will not work!");
+		}
+		
+		if(!onGameLoadObjects.contains(e))
+			onGameLoadObjects.add(e);
+	}
+	
+	/**registers and event listener of the given type
+	 * @param e the event to register
+	 */
+	public static final void registerEventListener(SynchronousLooping e) {
+		if(!APIExsists()) {
+			System.out.println("==WARNING== attempted to register game loaded event without CRISPR API present. Any functionality that relys on sync looping event will not work!");
+		}
+		
+		if(!syncLoopingObjects.contains(e))
+			syncLoopingObjects.add(e);
 	}
 
 }
