@@ -14,7 +14,7 @@ public class Version {
 	 * @param v the string form of a version
 	 */
 	Version(String v){
-		String[] parts = v.split(".");
+		String[] parts = v.split("\\.");
 		if(parts.length>3) {
 			throw new VersionFormatException("too many version parts");
 		}

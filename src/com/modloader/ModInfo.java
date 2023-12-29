@@ -74,7 +74,7 @@ public class ModInfo {
 	}
 	
 	public String toString() {
-		return modName + " jarFile: " + jarFile + " jarFile Path: " + absoluteJarFile + " entry point: " + entryPoint + " mod id: "+modid;
+		return modName + " jarFile: " + jarFile + " jarFile Path: " + absoluteJarFile + " entry point: " + entryPoint + " mod id: "+modid+" version: "+version;
 	}
 	
 	public Version getLoaderVersion() {
