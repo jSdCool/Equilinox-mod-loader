@@ -20,6 +20,7 @@ import java.util.jar.JarFile;
 
 import javax.swing.JOptionPane;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.modloader.events.AsyncLooping;
@@ -43,6 +44,7 @@ public class Main {
 	private static OnGameLoadExec onGameLoadExec;
 	private static SynchronousLoopingExec syncLoopExec;
 	private static boolean gameLaoded =false,APIExsists=false;
+	private static final Version loaderVersion = new Version(1,0,0);
 	
 	/**the method that is called by the JVM when the program is launched
 	 * @param args command line arguments
@@ -122,6 +124,36 @@ public class Main {
 		        for(int i=0;i<modInfo.size();i++) {//load the main classes of each mod and execute it's main method
 		        	if(modInfo.get(i).getPriority()==j) {//if this mod is of the current priority
 			        	System.out.println("loading mod: "+modInfo.get(i).getModName());
+			        	//check for valid loader and dependency versions
+			        	
+			        	//check loader verison
+			        	if(modInfo.get(i).getLoaderGte()) {
+			        		if(!loaderVersion.greaterThanOrEqualTo(modInfo.get(i).getLoaderVersion())){
+			        			showLoaderVersionError(modInfo.get(i));
+			        		}
+			        	}else {
+			        		if(!loaderVersion.equals(modInfo.get(i).getLoaderVersion())) {
+			        			showLoaderVersionError(modInfo.get(i));
+			        		}
+			        	}
+			        	//check dependencies
+			        	for(Dependency d: modInfo.get(i).getDependencies()) {
+			        		ModInfo depends = modExsists(d.getId());
+			        		if(depends == null) {
+			        			showDependencynotFoundError(modInfo.get(i), d);
+			        		}
+			        		if(d.getGte()) {
+			        			if(!depends.getVersion().greaterThanOrEqualTo(d.getVersion())) {
+			        				showDependencyVersionNoMatchError(modInfo.get(i), d, depends);
+			        			}
+			        		}else {
+			        			if(!depends.getVersion().equals(d.getVersion())) {
+			        				showDependencyVersionNoMatchError(modInfo.get(i), d, depends);
+			        			}
+			        		}
+			        	}
+			        	//if it gets to here then all the dependencies are met
+			        	
 			        	//if the mod is the API then enable the api features
 			        	if(modInfo.get(i).getModID().equals("api")) {
 			        		APIExsists=true;
@@ -265,7 +297,47 @@ public class Main {
 	                    		throw new RuntimeException("attempted to load 2 mods with the same ID");
 	                    	}
 	                    }
-	                    mods.add(new ModInfo(modName, mainClass,modFiles[i],priority,new File("mods/"+modFiles[i]).getAbsolutePath(),id));
+	                    String modVersionString = json.getString("version");
+	                    Version modVersion = new Version(modVersionString);
+	                    if(modVersion.accesptsAnyPatch()) {
+	                    	throw new Version.VersionFormatException("a mod's version can not accept any patch");
+	                    }
+	                    
+	                    String loaderVersionString = json.getString("mod_loader_version");
+	                    Version loaderVersion;
+	                    boolean loaderGte;
+	                    if(loaderVersionString.startsWith(">=")) {
+	                    	loaderVersion = new Version(loaderVersionString.substring(2,loaderVersionString.length()));
+                    		if(loaderVersion.accesptsAnyPatch()) {
+                    			throw new Version.VersionFormatException("dependency versions can not be both anythiong beond a version and accept any patch for a version");
+                    		}
+                    		loaderGte = true;
+                    	}else {
+                    		loaderVersion = new Version(loaderVersionString);
+                    		loaderGte=false;
+                    	}
+	                    
+	                    JSONArray dependencies = json.getJSONArray("dependencies");
+	                    ArrayList<Dependency> depends = new ArrayList<>();
+	                    for(int j=0;j<dependencies.length();j++) {
+	                    	JSONObject o = dependencies.getJSONObject(j);
+	                    	String dependencyId = o.getString("modID");
+	                    	String dependencyVersion = o.getString("version");
+	                    	if(dependencyVersion.startsWith(">=")) {
+	                    		Version v = new Version(dependencyVersion.substring(2,dependencyVersion.length()));
+	                    		if(v.accesptsAnyPatch()) {
+	                    			throw new Version.VersionFormatException("dependency versions can not be both anythiong beond a version and accept any patch for a version");
+	                    		}
+	                    		depends.add(new Dependency(dependencyId,v,true));
+	                    	}else {
+	                    		Dependency d = new Dependency(dependencyId, new Version(dependencyVersion),false);
+	                    		depends.add(d);
+	                    	}
+	                    }
+	                    mods.add(new ModInfo(modName, mainClass,modFiles[i],priority,
+	                    		new File("mods/"+modFiles[i]).getAbsolutePath(),id,
+	                    		modVersion,loaderVersion,loaderGte,
+	                    		depends.toArray(new Dependency[] {})));
 	                    
 		            }
 				} catch (Exception e) {
@@ -329,6 +401,43 @@ public class Main {
 		
 		if(!syncLoopingObjects.contains(e))
 			syncLoopingObjects.add(e);
+	}
+	
+	private static void showLoaderVersionError(ModInfo mod) {
+		if(mod.getLoaderGte()) {
+			JOptionPane.showMessageDialog(null, "The mod "+mod.getModName()+"\nrequires loader version >="+mod.getLoaderVersion()+"\nthe current loader version is "+loaderVersion, "Incompatible loader version!", JOptionPane.ERROR_MESSAGE);
+		}else {
+			JOptionPane.showMessageDialog(null, "The mod "+mod.getModName()+"\nrequires loader version "+mod.getLoaderVersion()+"\nthe current loader version is "+loaderVersion, "Incompatible loader version!", JOptionPane.ERROR_MESSAGE);
+		}
+		
+		System.exit(1);
+	}
+	
+	private static void showDependencynotFoundError(ModInfo mod, Dependency d) {
+		if(d.getGte()) {
+			JOptionPane.showMessageDialog(null, "The mod "+mod.getModName()+"\ndepends on the mod with the ID: "+d.getId()+" verion >="+d.getVersion()+"\n but no mod was found with that ID", "Missing Dependency!", JOptionPane.ERROR_MESSAGE);			
+		}else {
+			JOptionPane.showMessageDialog(null, "The mod "+mod.getModName()+"\ndepends on the mod with the ID: "+d.getId()+" verion "+d.getVersion()+"\n but no mod was found with that ID", "Missing Dependency!", JOptionPane.ERROR_MESSAGE);
+		}
+		System.exit(1);
+	}
+	
+	private static void showDependencyVersionNoMatchError(ModInfo mod,Dependency d,ModInfo dep) {
+		if(d.getGte()) {
+			JOptionPane.showMessageDialog(null, "The mod "+mod.getModName()+"\ndepends on the mod: "+dep.getModName()+" verion >="+d.getVersion()+"\n but an incompatable version was found: "+dep.getVersion(),"Incompatible Mod Version!",JOptionPane.ERROR_MESSAGE);			
+		}else {
+			JOptionPane.showMessageDialog(null, "The mod "+mod.getModName()+"\ndepends on the mod: "+dep.getModName()+" verion "+d.getVersion()+"\n but an incompatable version was found: "+dep.getVersion(),"Incompatible Mod Version!",JOptionPane.ERROR_MESSAGE);
+		}
+		System.exit(1);
+	}
+	
+	private static ModInfo modExsists(String id) {
+		for(ModInfo m: modInfo) {
+			if(m.getModID().equals(id)) {
+				return m;
+			}
+		}
+		return null;
 	}
 
 }

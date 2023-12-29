@@ -11,6 +11,7 @@ import com.modloader.events.SynchronousLooping;
  *
  */
 public abstract class ModInitializer {
+	private ModInfo info;
 	/**this is the first method of your mode the game will call
 	 * @param args the arguments passed in on the command line
 	 */
@@ -35,6 +36,17 @@ public abstract class ModInitializer {
 	 */
 	public final void registerEventListener(SynchronousLooping e) {
 		Main.registerEventListener(e);
+	}
+	
+	final void setInfo(ModInfo m) {
+		info = m;
+	}
+	
+	/**gets basic info about this mod
+	 * @return information about the mod. mostly found in the mod.json file
+	 */
+	public final ModInfo getInfo() {
+		return info;
 	}
 
 }
