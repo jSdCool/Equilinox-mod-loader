@@ -161,6 +161,7 @@ public class Main {
 			        	System.out.println(modInfo.get(i).toString());
 			        	Class<?> modClass = modClassLoader.loadClass(modInfo.get(i).getMainClass());//load the main class of the mod
 			        	Object c = modClass.newInstance();//create an instance of the main class
+			        	((ModInitializer)c).setInfo(modInfo.get(i));//give the mod a reference to it's own info
 			        	((ModInitializer)c).initMod(clArgs);//run the init(main) method of the mod
 			        	modClasses.add((ModInitializer)c);//cast it to a ModInitializer so it can be handled natively instead of via reflection. then store it in a arrayList for later use
 		        	}
@@ -334,10 +335,16 @@ public class Main {
 	                    		depends.add(d);
 	                    	}
 	                    }
+	                    ArrayList<String> authors = new ArrayList<>();
+	                    JSONArray authorList = json.getJSONArray("authors");
+	                    for(int j=0;j<authorList.length();j++) {
+	                    	authors.add(authorList.getString(j));
+	                    }
 	                    mods.add(new ModInfo(modName, mainClass,modFiles[i],priority,
 	                    		new File("mods/"+modFiles[i]).getAbsolutePath(),id,
 	                    		modVersion,loaderVersion,loaderGte,
-	                    		depends.toArray(new Dependency[] {})));
+	                    		depends.toArray(new Dependency[] {}),
+	                    		authors.toArray(new String[] {})));
 	                    
 		            }
 				} catch (Exception e) {

@@ -11,7 +11,8 @@ public class ModInfo {
 	private final Version version,loaderVersion;
 	private final Dependency[] dependencies;
 	private final boolean loaderGte;
-	ModInfo(String name,String mainClass,String jarPath,byte priority,String absoluteJarPath,String modid,Version version,Version loaderVersion,boolean loaderGte,Dependency[] dependencies){
+	final String[] authors;
+	ModInfo(String name,String mainClass,String jarPath,byte priority,String absoluteJarPath,String modid,Version version,Version loaderVersion,boolean loaderGte,Dependency[] dependencies,String[] authors){
 		modName=name;
 		entryPoint=mainClass;
 		jarFile=jarPath;
@@ -22,6 +23,7 @@ public class ModInfo {
 		this.loaderVersion = loaderVersion;
 		this.dependencies = dependencies;
 		this.loaderGte=loaderGte;
+		this.authors=authors;
 	}
 	
 	/**get the name of the mod
@@ -77,15 +79,31 @@ public class ModInfo {
 		return modName + " jarFile: " + jarFile + " jarFile Path: " + absoluteJarFile + " entry point: " + entryPoint + " mod id: "+modid+" version: "+version;
 	}
 	
+	/**get the required mod loader version for this mod
+	 * @return the required mod loader version
+	 */
 	public Version getLoaderVersion() {
 		return loaderVersion;
 	}
 	
+	/**get a list of other mods this mod depends on
+	 * @return a list of dependencies
+	 */
 	public Dependency[] getDependencies() {
 		return dependencies;
 	}
 	
+	/**get weather or not the loader version should be greater then or equal to
+	 * @return if the loader version id greater then or equal to
+	 */
 	public boolean getLoaderGte() {
 		return loaderGte;
+	}
+	
+	/**get the authors of the mod
+	 * @return a string array containing the names of the mod authors
+	 */
+	public String[] getAuthors() {
+		return authors;
 	}
 }
