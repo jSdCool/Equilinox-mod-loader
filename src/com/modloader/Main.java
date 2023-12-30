@@ -410,6 +410,9 @@ public class Main {
 			syncLoopingObjects.add(e);
 	}
 	
+	/**show an error for when a mod requires a different loader version
+	 * @param mod the mod that is complaining 
+	 */
 	private static void showLoaderVersionError(ModInfo mod) {
 		if(mod.getLoaderGte()) {
 			JOptionPane.showMessageDialog(null, "The mod "+mod.getModName()+"\nrequires loader version >="+mod.getLoaderVersion()+"\nthe current loader version is "+loaderVersion, "Incompatible loader version!", JOptionPane.ERROR_MESSAGE);
@@ -420,6 +423,10 @@ public class Main {
 		System.exit(1);
 	}
 	
+	/**show an error for when a mod another mod depends on does not exist
+	 * @param mod the mod that is complaining  
+	 * @param d the required mod
+	 */
 	private static void showDependencynotFoundError(ModInfo mod, Dependency d) {
 		if(d.getGte()) {
 			JOptionPane.showMessageDialog(null, "The mod "+mod.getModName()+"\ndepends on the mod with the ID: "+d.getId()+" verion >="+d.getVersion()+"\n but no mod was found with that ID", "Missing Dependency!", JOptionPane.ERROR_MESSAGE);			
@@ -429,6 +436,11 @@ public class Main {
 		System.exit(1);
 	}
 	
+	/**show an error for when a mod requires a ddiffrent version of another mod then what is present
+	 * @param mod the mod that is complaining  
+	 * @param d the required mod
+	 * @param dep the version of the mod that currently exists
+	 */
 	private static void showDependencyVersionNoMatchError(ModInfo mod,Dependency d,ModInfo dep) {
 		if(d.getGte()) {
 			JOptionPane.showMessageDialog(null, "The mod "+mod.getModName()+"\ndepends on the mod: "+dep.getModName()+" verion >="+d.getVersion()+"\n but an incompatable version was found: "+dep.getVersion(),"Incompatible Mod Version!",JOptionPane.ERROR_MESSAGE);			
@@ -438,6 +450,10 @@ public class Main {
 		System.exit(1);
 	}
 	
+	/**checks if a mod is present
+	 * @param id the ID of the mod to check
+	 * @return the info of the mod if it exists or null if it does not
+	 */
 	private static ModInfo modExsists(String id) {
 		for(ModInfo m: modInfo) {
 			if(m.getModID().equals(id)) {
