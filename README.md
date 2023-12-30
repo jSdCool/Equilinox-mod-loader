@@ -2,6 +2,8 @@ NOTICE: if your game crashes while using the mod loader DO NOT CONTACT THE GAME 
 
 NOTICE: at this time only windows is offishaly suported
 
+NOTICE: you will need to proved you own copy of the game to use this. NO GAME FILES ARE DISTRIBUTED IN THIS PROJECT
+
 # Installation 
 1. Go to the releases page and download the latest version of the mod loader. It should be EquilinoxModloaderV1.x.x.jar  
 2. Open the install files folder for Equilinox. On Steam it is: Equilinox > Manage > Brows local files  
