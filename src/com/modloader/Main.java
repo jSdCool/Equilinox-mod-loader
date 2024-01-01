@@ -57,6 +57,31 @@ public class Main {
 		}
 		
 		String gameJarPath="EquilinoxWindows_game.jar";
+		ArrayList<String> additionalMods = new ArrayList<>();
+		//process command line args
+		for(int i=0;i<args.length;i++) {
+			//if the game jar file is in another location
+			//specify the location of the game jar
+			if(args[i].equals("--gameLocation")) {
+				i++;
+				if(i<args.length) {
+					gameJarPath = args[i];
+				}
+				continue;
+			}
+			//provide locations for additional mods that are not in the mod folder
+			//this is mostly intended for mod development. to prevent unnecessary movement of files
+			//note the proved vale must be the file path of a jar file
+			if(args[i].equals("-mod")){
+				i++;
+				if(i<args.length) {
+					additionalMods.add(args[i]);
+				}
+				continue;
+			}
+			
+		}
+		
 		AsyncLoopExec asyncLoopting = new AsyncLoopExec(asyncLoopingObjects);
 		
 		// Get the game JAR file 
@@ -104,7 +129,7 @@ public class Main {
 	        Method mainMethod = clazz.getMethod("main", String[].class);
 	      
 	        //load mods here
-	        modInfo = findMods(modsFolder);//find all the mods in the mods folder
+	        modInfo = findMods(modsFolder,additionalMods);//find all the mods in the mods folder
 	        
 	        ArrayList<URL> modJars=new ArrayList<>();
 	        ArrayList<ModInitializer> modClasses = new ArrayList<>();
@@ -233,11 +258,15 @@ public class Main {
 	 * @param modsFolder the folder the mods are in
 	 * @return a list of information about all the mods found
 	 */
-	static ArrayList<ModInfo> findMods(File modsFolder){
+	static ArrayList<ModInfo> findMods(File modsFolder,ArrayList<String> additionaMods){
 		String jsonPos ="mod.json";
 		
 		ArrayList<ModInfo> mods = new ArrayList<>();
 		String[] modFiles = modsFolder.list();//get a list of all files/folders in the mods folder
+		for(String s:modFiles) {
+			additionaMods.add(s);
+		}
+		modFiles = additionaMods.toArray(modFiles);
 		for(int i=0;i<modFiles.length;i++) {
 			if(modFiles[i].endsWith(".jar")) {//only attempt to check jar files
 				
