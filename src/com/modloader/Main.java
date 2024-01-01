@@ -44,7 +44,7 @@ public class Main {
 	private static OnGameLoadExec onGameLoadExec;
 	private static SynchronousLoopingExec syncLoopExec;
 	private static boolean gameLaoded =false,APIExsists=false;
-	private static final Version loaderVersion = new Version(1,0,0);
+	private static final Version loaderVersion = new Version(1,0,1);
 	
 	/**the method that is called by the JVM when the program is launched
 	 * @param args command line arguments
@@ -233,8 +233,10 @@ public class Main {
 	        
 	        //start the async looping event
 	        asyncLoopting.start();
+	        //prepare to replace the text in the error handler
+	        new ErrorManagerFixer(classLoader);
 	        //run the game
-	        System.out.println("executing main medthod");
+	        System.out.println("executing main medthod\n\n=====================================\n\n");
 	        mainMethod.invoke(instance, (Object)args);
 	        modClassLoader.close();
 	        classLoader.close();
@@ -302,8 +304,8 @@ public class Main {
 		modFiles = additionaMods.toArray(modFiles);
 		for(int i=0;i<modFiles.length;i++) {
 			if(modFiles[i].endsWith(".jar")) {//only attempt to check jar files
-				
-				try (JarFile jarFile = new JarFile("mods/"+modFiles[i])) {
+				String inFolder = ((i<modsFolder.list().length)? "mods/":"");
+				try (JarFile jarFile = new JarFile(inFolder+modFiles[i])) {
 		            JarEntry entry = jarFile.getJarEntry(jsonPos);//get the json file in the jar file
 		            if (entry != null) {//if the json file exists
 		            	InputStream inputStream = jarFile.getInputStream(entry);
@@ -370,7 +372,7 @@ public class Main {
 	                    	authors.add(authorList.getString(j));
 	                    }
 	                    mods.add(new ModInfo(modName, mainClass,modFiles[i],priority,
-	                    		new File("mods/"+modFiles[i]).getAbsolutePath(),id,
+	                    		new File(inFolder+modFiles[i]).getAbsolutePath(),id,
 	                    		modVersion,loaderVersion,loaderGte,
 	                    		depends.toArray(new Dependency[] {}),
 	                    		authors.toArray(new String[] {})));
