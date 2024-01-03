@@ -11,7 +11,7 @@ public class ErrorManagerFixer extends Thread{
 	}
 	
 	public void run() {
-		
+		replaceMessage();
 	}
 	void replaceMessage() {
 		try {

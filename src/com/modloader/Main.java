@@ -48,8 +48,9 @@ public class Main {
 	
 	/**the method that is called by the JVM when the program is launched
 	 * @param args command line arguments
+	 * @throws InvocationTargetException allow the game's error handler to detect when errors occur on the main thread
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InvocationTargetException {
 		//check the java version to make sure it is java 8. key features of java used by the mod loader do not work in java 9+
 		String javaVersion = System.getProperty("java.version");
 		if(!javaVersion.startsWith("1.8")) {
@@ -137,7 +138,7 @@ public class Main {
 	        ArrayList<ModInitializer> modClasses = new ArrayList<>();
 	        
 	        for(int i=0;i<modInfo.size();i++) {//make the path of the mod jars into a URL array so the computer knows what to load
-	        	modJars.add(new File("mods/"+modInfo.get(i).getJar()).toURI().toURL());
+	        	modJars.add(new File(modInfo.get(i).getJar()).toURI().toURL());
 	        }
 	        
 	        URLClassLoader modClassLoader = new URLClassLoader(modJars.toArray(new URL[]{}),classLoader);//load the jars
@@ -249,9 +250,9 @@ public class Main {
 			e.printStackTrace();
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
-		} catch (InvocationTargetException e) {
+		}/* catch (InvocationTargetException e) {
 			e.printStackTrace();
-		} catch (IOException e) {
+		} */catch (IOException e) {
 			e.printStackTrace();
 		}
         
@@ -371,7 +372,7 @@ public class Main {
 	                    for(int j=0;j<authorList.length();j++) {
 	                    	authors.add(authorList.getString(j));
 	                    }
-	                    mods.add(new ModInfo(modName, mainClass,modFiles[i],priority,
+	                    mods.add(new ModInfo(modName, mainClass,inFolder+modFiles[i],priority,
 	                    		new File(inFolder+modFiles[i]).getAbsolutePath(),id,
 	                    		modVersion,loaderVersion,loaderGte,
 	                    		depends.toArray(new Dependency[] {}),
