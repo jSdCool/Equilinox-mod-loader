@@ -11,6 +11,9 @@ import com.modloader.events.OnGameLoad;
 public class OnGameLoadExec {
 	private static boolean exsists =false;
 	ArrayList<OnGameLoad> onGameLoadObjects;
+	/**create the object that is responsible for propagating the game load event
+	 * @param onGameLoadObjects the registered listeners
+	 */
 	public OnGameLoadExec(ArrayList<OnGameLoad> onGameLoadObjects){
 		if(!exsists) {//allow only 1 instance of this class to exist at once
 			exsists = true;
@@ -21,7 +24,7 @@ public class OnGameLoadExec {
 	
 	}
 	
-	/**run the game load event on all the register listeners
+	/**run the game load event on all the registered listeners
 	 */
 	public void run() {
 		//check if any game load events were register

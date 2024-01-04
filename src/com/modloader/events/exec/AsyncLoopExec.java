@@ -12,6 +12,9 @@ import com.modloader.events.AsyncLooping;
 public final class AsyncLoopExec extends Thread{
 	private static boolean exsists =false;
 	private ArrayList<AsyncLooping> asyncLoopingObjects;
+	/**create the object that is responsible for propagating the async looping event
+	 * @param asyncLoopingObjects the registered listeners
+	 */
 	public AsyncLoopExec(ArrayList<AsyncLooping> asyncLoopingObjects){
 		//allow only 1 instance of this class to exsist
 		if(!exsists) {
