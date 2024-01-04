@@ -40,6 +40,5 @@ public class OnGameLoadExec {
 				e.printStackTrace();
 			}
 		}
-    System.out.println(Thread.getDefaultUncaughtExceptionHandler());
 	}
 }
